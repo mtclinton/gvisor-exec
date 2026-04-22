@@ -1,0 +1,5 @@
+/gvisor-exec
+/gvisor-exec-linux-*
+*.test
+*.out
+/dist/
