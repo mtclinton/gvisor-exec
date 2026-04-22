@@ -3,7 +3,7 @@ PKG      := ./cmd/gvisor-exec
 GOFLAGS  ?= -trimpath
 LDFLAGS  ?= -s -w
 
-.PHONY: all build test unit integration vet fmt clean smoke help
+.PHONY: all build test unit integration vet fmt clean smoke examples help
 
 all: build
 
@@ -29,6 +29,9 @@ smoke: build ## End-to-end smoke test using the built binary
 	./$(BIN) -- /bin/uname -a
 	./$(BIN) -- /bin/sh -c 'id; echo $$$$; ls /tmp'
 	./$(BIN) -- /bin/sh -c 'exit 42'; test $$? -eq 42 && echo 'exit-code propagation: ok'
+
+examples: build ## Run the scripted examples in examples/
+	./examples/run-all.sh
 
 clean: ## Remove build artifacts
 	rm -f $(BIN)

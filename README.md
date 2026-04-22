@@ -58,21 +58,38 @@ Everything after `--` is the command to run inside the sandbox. Common flags:
 | `-verbose` | `false` | Print the runsc invocation and bundle path. |
 | `-trace` | `false` | Enable `runsc --strace`. |
 
-### Examples
+## Recipes
 
-```shell
-# Isolate a downloaded script.
-gvisor-exec -- sh ./untrusted.sh
+Five runnable scripts covering the common shapes live in
+[`examples/`](examples/). Start with `make examples` (or
+`./examples/run-all.sh`) to see them all. The table below is the short
+version.
 
-# Run a build inside a sandbox, persisting nothing to the host.
-gvisor-exec -bind "$PWD:/work" -cwd /work -- make
+| Task | Command |
+|---|---|
+| Run a script piped via stdin | `cat script.sh \| gvisor-exec -- /bin/sh` |
+| Run a script on disk | `gvisor-exec -- /bin/sh /home/me/script.sh` |
+| Eval Python from stdin | `echo 'print(1+1)' \| gvisor-exec -- /usr/bin/python3` |
+| Build with source bind-mounted | `gvisor-exec -bind "$PWD:/mnt" -cwd /mnt -- make` |
+| Build and extract the artifact | `gvisor-exec -ro-bind "$PWD:/mnt" -cwd /tmp -- sh -c 'cp /mnt/*.c . && gcc *.c -o out && tar c out' \| tar x` |
+| Inspect what a binary does | `gvisor-exec -- ./probe` (then read stdout/stderr) |
+| See the isolation from inside | `gvisor-exec -- /bin/sh -c 'uname -r; id; ls /proc \| grep -cE "^[0-9]+$"'` |
 
-# Outbound network via the host stack (for a trusted one-shot fetch).
-gvisor-exec -network host -env-inherit HTTPS_PROXY -- curl https://example.com
+### Things to know while writing recipes
 
-# Poke around — strace every syscall.
-gvisor-exec -trace -- /bin/ls /
-```
+1. **Scripts have to be visible in the sandbox.** The host root is the
+   sandbox root, so anything under `/home`, `/opt`, `/usr` etc. works.
+   `/tmp` is a fresh tmpfs — files written to `/tmp` on the *host* before
+   invoking will not appear inside. Use a different path or pipe via stdin.
+2. **Writes are ephemeral.** When the process exits, the overlay is torn
+   down. To export bytes, pipe them to stdout (e.g., `tar c artifact`) and
+   extract on the host.
+3. **Bind destinations must already exist on the host.** `-bind "$PWD:/work"`
+   fails unless `/work` exists. Use `/mnt`, `/opt`, or a path under your
+   `$HOME`.
+4. **Network is off by default** and `-network host` has limited routing
+   under `runsc --rootless`. For real outbound access you need non-rootless
+   runsc, which this tool doesn't set up for you today.
 
 ## Behavior
 
@@ -158,6 +175,7 @@ make test          # unit + integration tests (integration needs runsc)
 make unit          # unit tests only
 make integration   # integration tests only
 make smoke         # quick end-to-end check using the built binary
+make examples      # run everything in examples/ sequentially
 ```
 
 ## Limitations
@@ -177,9 +195,7 @@ make smoke         # quick end-to-end check using the built binary
 
 ## Credits
 
-Built on top of gVisor (Google). The idea is #14 on the project-ideas list in
-[`gvisor-project-ideas.md`](../gvisor-project-ideas.md): "a single Go binary
-wrapping gvisor's API to run any binary with syscall isolation."
+Built on top of gVisor (Google).
 
 ## License
 
