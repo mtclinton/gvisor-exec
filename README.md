@@ -199,5 +199,4 @@ Built on top of gVisor (Google).
 
 ## License
 
-Licensed under the same terms as the other projects in this tree. See
-`LICENSE` at the repository root if present.
+MIT. See [`LICENSE`](LICENSE).
