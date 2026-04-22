@@ -2,4 +2,11 @@
 /gvisor-exec-linux-*
 *.test
 *.out
+coverage.*
 /dist/
+
+# editor / OS
+.idea/
+.vscode/
+.DS_Store
+*.swp
